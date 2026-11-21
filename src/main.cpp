@@ -107,7 +107,7 @@ public:
 };
 
 // Main menu integration
-class $modify(MenuLayer) {
+class $modify(HawkPathMenuLayer, MenuLayer) {
     bool init() {
         if (!MenuLayer::init()) {
             return false;
@@ -118,7 +118,7 @@ class $modify(MenuLayer) {
         auto button = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("HawkPath"),
             this,
-            menu_selector(MenuLayer::onHawkPath)
+            menu_selector(HawkPathMenuLayer::onHawkPath)
         );
 
         auto menu = CCMenu::create();
