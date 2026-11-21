@@ -44,7 +44,7 @@ protected:
     static void setFit(
         FitLabel& fit, std::string const& text, cocos2d::ccColor3B color
     );
-    cocos2d::CCMenuItemSpriteExtra* addButton(
+    CCMenuItemSpriteExtra* addButton(
         cocos2d::CCMenu* menu, char const* text, char const* texture,
         cocos2d::CCPoint center, cocos2d::CCSize cell, cocos2d::SEL_MenuHandler handler
     );
