@@ -5,6 +5,7 @@
 using namespace geode::prelude;
 
 // Temporary control states
+
 class HawkPathPopup : public geode::Popup {
 protected:
     bool m_safeMode = true;
@@ -20,41 +21,44 @@ protected:
 
         this->setTitle("HawkPath Control Panel");
 
+        // Pathfinder status
         auto status = CCLabelBMFont::create(
             "Pathfinder: Not started",
             "bigFont.fnt"
         );
-        status->setScale(0.45f);
+        status->setScale(0.38f);
         m_mainLayer->addChildAtPosition(
             status,
             Anchor::Center,
-            ccp(0, 48)
+            ccp(0, 38)
         );
 
+        // Safe Mode status
         m_safeModeLabel = CCLabelBMFont::create(
             "Safe Mode: ON",
             "bigFont.fnt"
         );
-        m_safeModeLabel->setScale(0.5f);
+        m_safeModeLabel->setScale(0.42f);
         m_mainLayer->addChildAtPosition(
             m_safeModeLabel,
             Anchor::Center,
-            ccp(0, 15)
+            ccp(0, 12)
         );
 
+        // Emergency Stop status
         m_stopLabel = CCLabelBMFont::create(
             "Emergency Stop: READY",
             "bigFont.fnt"
         );
-        m_stopLabel->setScale(0.45f);
+        m_stopLabel->setScale(0.38f);
         m_mainLayer->addChildAtPosition(
             m_stopLabel,
             Anchor::Center,
-            ccp(0, -15)
+            ccp(0, -14)
         );
 
+        // Controls menu
         auto menu = CCMenu::create();
-        menu->setPosition(ccp(0, 0));
 
         auto safeButton = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("Toggle Safe Mode"),
@@ -68,13 +72,22 @@ protected:
             menu_selector(HawkPathPopup::onEmergencyStop)
         );
 
-        safeButton->setPosition(ccp(130, -48));
-        stopButton->setPosition(ccp(130, -82));
+        // Make buttons smaller
+        safeButton->setScale(0.65f);
+        stopButton->setScale(0.65f);
+
+        // Position relative to the menu center
+        safeButton->setPosition(ccp(0, -48));
+        stopButton->setPosition(ccp(0, -78));
 
         menu->addChild(safeButton);
         menu->addChild(stopButton);
 
-        m_mainLayer->addChild(menu);
+        // IMPORTANT: Center the menu inside the popup
+        m_mainLayer->addChildAtPosition(
+            menu,
+            Anchor::Center
+        );
 
         return true;
     }

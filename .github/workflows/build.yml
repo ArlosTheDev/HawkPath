@@ -25,6 +25,12 @@ jobs:
         with:
           sdk: given
           path: .
+          ccache-variant: sccache
+          use-cpm-cache: true
+
+      - name: Show sccache statistics
+        shell: bash
+        run: sccache --show-stats
 
       - name: Upload HawkPath
         uses: actions/upload-artifact@v7
