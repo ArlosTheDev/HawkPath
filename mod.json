@@ -8,10 +8,31 @@
 	},
 	"id": "hawkmc.hawkpath",
 	"name": "HawkPath",
-	"version": "v0.0.1",
+	"version": "v0.1.0",
 	"developer": "HawkMC",
-	"description": "",
+	"description": "Experimental Geometry Dash pathfinding research mod with a fail-closed safety gate. Route execution is disabled and the physics model is uncalibrated in this release.",
+	"resources": {
+		"sprites": [
+			"logo.png"
+		]
+	},
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3"
+	},
+	"settings": {
+		"show-event-log": {
+			"type": "bool",
+			"name": "Show Event Log",
+			"description": "Show the event log card in the HawkPath dashboard.",
+			"default": true
+		},
+		"ui-refresh-interval": {
+			"type": "float",
+			"name": "Dashboard Refresh Interval",
+			"description": "How often (in seconds) the dashboard refreshes its status. Cosmetic only; it cannot affect safety checks.",
+			"default": 0.25,
+			"min": 0.1,
+			"max": 2.0
+		}
 	}
 }
