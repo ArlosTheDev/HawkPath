@@ -1,6 +1,7 @@
 
 #include <Geode/Geode.hpp>
 #include <Geode/modify/MenuLayer.hpp>
+#include "SafetyManager.hpp"
 
 using namespace geode::prelude;
 
@@ -10,28 +11,56 @@ using namespace geode::prelude;
 
 class HawkPathPopup : public geode::Popup {
 protected:
-    bool m_safeMode = true;
-    bool m_emergencyStop = false;
-
     CCLabelBMFont* m_safeModeStatus = nullptr;
     CCLabelBMFont* m_stopStatus = nullptr;
+    CCLabelBMFont* m_readinessStatus = nullptr;
+
+    void refreshUI() {
+        // Safe Mode
+        bool safe = g_safetyManager.isSafeModeEnabled();
+
+        m_safeModeStatus->setString(
+            safe ? "SAFE MODE: ON" : "SAFE MODE: OFF"
+        );
+
+        m_safeModeStatus->setColor(
+            safe ? ccc3(100, 230, 150)
+                 : ccc3(255, 190, 80)
+        );
+
+        // Emergency Stop
+        bool stopped = g_safetyManager.isEmergencyStopped();
+
+        m_stopStatus->setString(
+            stopped
+                ? "EMERGENCY STOP: ACTIVE"
+                : "EMERGENCY STOP: READY"
+        );
+
+        m_stopStatus->setColor(
+            stopped ? ccc3(255, 90, 90)
+                    : ccc3(150, 155, 175)
+        );
+
+        // Pathfinder readiness
+        m_readinessStatus->setString(
+            g_safetyManager.getBlockReasonText()
+        );
+
+        m_readinessStatus->setColor(
+            g_safetyManager.canStartPathfinder()
+                ? ccc3(100, 230, 150)
+                : ccc3(255, 190, 80)
+        );
+    }
 
     bool init() {
-        if (!Popup::init(380.f, 270.f)) {
+        if (!Popup::init(400.f, 310.f)) {
             return false;
         }
 
         auto size = m_mainLayer->getContentSize();
-
-        const float centerX = size.width * 0.5f;
-
-        // ---------------------------------------------
-        // COLORS
-        // ---------------------------------------------
-
-        const ccColor3B white = ccc3(240, 240, 255);
-        const ccColor3B muted = ccc3(145, 150, 175);
-        const ccColor3B purple = ccc3(160, 100, 255);
+        float centerX = size.width * 0.5f;
 
         // ---------------------------------------------
         // HEADER
@@ -43,10 +72,9 @@ protected:
         );
 
         header->setScale(0.75f);
-        header->setColor(purple);
-
+        header->setColor(ccc3(170, 115, 255));
         header->setPosition(
-            ccp(centerX, size.height - 32.f)
+            ccp(centerX, size.height - 34.f)
         );
 
         m_mainLayer->addChild(header);
@@ -57,10 +85,9 @@ protected:
         );
 
         subtitle->setScale(0.38f);
-        subtitle->setColor(muted);
-
+        subtitle->setColor(ccc3(145, 150, 175));
         subtitle->setPosition(
-            ccp(centerX, size.height - 53.f)
+            ccp(centerX, size.height - 56.f)
         );
 
         m_mainLayer->addChild(subtitle);
@@ -72,108 +99,96 @@ protected:
         auto statusCard = CCLayerColor::create(
             ccc4(35, 32, 52, 255),
             size.width - 48.f,
-            65.f
+            115.f
         );
 
         statusCard->setPosition(
-            ccp(24.f, size.height - 135.f)
+            ccp(24.f, size.height - 185.f)
         );
 
         m_mainLayer->addChild(statusCard);
 
         auto statusTitle = CCLabelBMFont::create(
-            "PATHFINDER STATUS",
+            "SYSTEM STATUS",
             "goldFont.fnt"
         );
 
-        statusTitle->setScale(0.42f);
-        statusTitle->setColor(muted);
-
+        statusTitle->setScale(0.43f);
+        statusTitle->setColor(ccc3(145, 150, 175));
         statusTitle->setPosition(
-            ccp(centerX, size.height - 86.f)
+            ccp(centerX, size.height - 88.f)
         );
 
         m_mainLayer->addChild(statusTitle);
 
-        auto status = CCLabelBMFont::create(
-            "NOT STARTED",
+        auto pathfinderStatus = CCLabelBMFont::create(
+            "PATHFINDER: STOPPED",
             "bigFont.fnt"
         );
 
-        status->setScale(0.48f);
-        status->setColor(white);
-
-        status->setPosition(
-            ccp(centerX, size.height - 112.f)
+        pathfinderStatus->setScale(0.43f);
+        pathfinderStatus->setColor(ccc3(230, 230, 245));
+        pathfinderStatus->setPosition(
+            ccp(centerX, size.height - 113.f)
         );
 
-        m_mainLayer->addChild(status);
+        m_mainLayer->addChild(pathfinderStatus);
 
         // ---------------------------------------------
-        // CONTROL CARD
-        // ---------------------------------------------
-
-        auto controlCard = CCLayerColor::create(
-            ccc4(35, 32, 52, 255),
-            size.width - 48.f,
-            95.f
-        );
-
-        controlCard->setPosition(
-            ccp(24.f, 25.f)
-        );
-
-        m_mainLayer->addChild(controlCard);
-
-        auto controlTitle = CCLabelBMFont::create(
-            "SYSTEM CONTROLS",
-            "goldFont.fnt"
-        );
-
-        controlTitle->setScale(0.42f);
-        controlTitle->setColor(muted);
-
-        controlTitle->setPosition(
-            ccp(centerX, 101.f)
-        );
-
-        m_mainLayer->addChild(controlTitle);
-
-        // ---------------------------------------------
-        // SAFE MODE STATUS
+        // SAFETY STATUS
         // ---------------------------------------------
 
         m_safeModeStatus = CCLabelBMFont::create(
-            "SAFE MODE: ON",
+            "",
             "bigFont.fnt"
         );
 
         m_safeModeStatus->setScale(0.42f);
-        m_safeModeStatus->setColor(ccc3(100, 230, 150));
-
         m_safeModeStatus->setPosition(
-            ccp(centerX, 82.f)
+            ccp(centerX, size.height - 139.f)
         );
 
         m_mainLayer->addChild(m_safeModeStatus);
 
-        // ---------------------------------------------
-        // EMERGENCY STOP STATUS
-        // ---------------------------------------------
-
         m_stopStatus = CCLabelBMFont::create(
-            "EMERGENCY STOP: READY",
+            "",
             "bigFont.fnt"
         );
 
-        m_stopStatus->setScale(0.36f);
-        m_stopStatus->setColor(muted);
-
+        m_stopStatus->setScale(0.38f);
         m_stopStatus->setPosition(
-            ccp(centerX, 65.f)
+            ccp(centerX, size.height - 160.f)
         );
 
         m_mainLayer->addChild(m_stopStatus);
+
+        // ---------------------------------------------
+        // READINESS CARD
+        // ---------------------------------------------
+
+        auto readinessCard = CCLayerColor::create(
+            ccc4(35, 32, 52, 255),
+            size.width - 48.f,
+            42.f
+        );
+
+        readinessCard->setPosition(
+            ccp(24.f, 78.f)
+        );
+
+        m_mainLayer->addChild(readinessCard);
+
+        m_readinessStatus = CCLabelBMFont::create(
+            "",
+            "bigFont.fnt"
+        );
+
+        m_readinessStatus->setScale(0.38f);
+        m_readinessStatus->setPosition(
+            ccp(centerX, 99.f)
+        );
+
+        m_mainLayer->addChild(m_readinessStatus);
 
         // ---------------------------------------------
         // BUTTONS
@@ -182,7 +197,7 @@ protected:
         auto menu = CCMenu::create();
 
         auto safeButton = CCMenuItemSpriteExtra::create(
-            ButtonSprite::create("TOGGLE SAFE MODE"),
+            ButtonSprite::create("SAFE MODE"),
             this,
             menu_selector(HawkPathPopup::onToggleSafeMode)
         );
@@ -193,56 +208,63 @@ protected:
             menu_selector(HawkPathPopup::onEmergencyStop)
         );
 
-        safeButton->setScale(0.65f);
-        stopButton->setScale(0.65f);
+        auto resetButton = CCMenuItemSpriteExtra::create(
+            ButtonSprite::create("RESET STOP"),
+            this,
+            menu_selector(HawkPathPopup::onResetStop)
+        );
 
-        safeButton->setPosition(ccp(-82.f, 0.f));
-        stopButton->setPosition(ccp(82.f, 0.f));
+        safeButton->setScale(0.58f);
+        stopButton->setScale(0.58f);
+        resetButton->setScale(0.58f);
+
+        safeButton->setPosition(ccp(-95.f, 0.f));
+        stopButton->setPosition(ccp(95.f, 0.f));
+        resetButton->setPosition(ccp(0.f, -34.f));
 
         menu->addChild(safeButton);
         menu->addChild(stopButton);
+        menu->addChild(resetButton);
 
         menu->setPosition(
-            ccp(centerX, 43.f)
+            ccp(centerX, 55.f)
         );
 
         m_mainLayer->addChild(menu);
+
+        refreshUI();
 
         return true;
     }
 
     // ---------------------------------------------
-    // SAFE MODE CALLBACK
+    // BUTTON CALLBACKS
     // ---------------------------------------------
 
     void onToggleSafeMode(CCObject*) {
-        m_safeMode = !m_safeMode;
-
-        m_safeModeStatus->setString(
-            m_safeMode ? "SAFE MODE: ON" : "SAFE MODE: OFF"
+        g_safetyManager.setSafeMode(
+            !g_safetyManager.isSafeModeEnabled()
         );
 
-        m_safeModeStatus->setColor(
-            m_safeMode
-                ? ccc3(100, 230, 150)
-                : ccc3(255, 190, 80)
-        );
+        refreshUI();
     }
 
-    // ---------------------------------------------
-    // EMERGENCY STOP CALLBACK
-    // ---------------------------------------------
-
     void onEmergencyStop(CCObject*) {
-        m_emergencyStop = true;
+        g_safetyManager.activateEmergencyStop();
 
-        m_stopStatus->setString(
-            "EMERGENCY STOP: ACTIVE"
-        );
+        refreshUI();
 
-        m_stopStatus->setColor(
-            ccc3(255, 90, 90)
-        );
+        log::warn("HawkPath: Emergency Stop activated!");
+    }
+
+    void onResetStop(CCObject*) {
+        if (!g_safetyManager.resetEmergencyStop()) {
+            log::warn("HawkPath: Cannot reset while running!");
+        } else {
+            log::info("HawkPath: Emergency Stop reset.");
+        }
+
+        refreshUI();
     }
 
 public:
@@ -261,7 +283,7 @@ public:
 
 
 // =====================================================
-// MAIN MENU INTEGRATION
+// GEOMETRY DASH MAIN MENU LAUNCHER
 // =====================================================
 
 class $modify(HawkPathMenuLayer, MenuLayer) {
@@ -270,11 +292,9 @@ class $modify(HawkPathMenuLayer, MenuLayer) {
             return false;
         }
 
-        // Get actual game UI dimensions
         auto winSize =
             CCDirector::sharedDirector()->getWinSize();
 
-        // Create HawkPath launcher
         auto button = CCMenuItemSpriteExtra::create(
             ButtonSprite::create("HAWKPATH"),
             this,
@@ -283,13 +303,10 @@ class $modify(HawkPathMenuLayer, MenuLayer) {
 
         button->setScale(0.8f);
 
-        // Create menu
         auto menu = CCMenu::create();
-
         menu->setPosition(ccp(0.f, 0.f));
         menu->addChild(button);
 
-        // Resolution-aware positioning
         button->setPosition(
             ccp(
                 winSize.width - 75.f,
